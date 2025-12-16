@@ -24,3 +24,4 @@ def read_item(item_id: int, q: str | None = None):
 @app.post("/items/")
 def create_item(item: Item):
     return {"item": item, "message": "Item créé avec succès"}
+
