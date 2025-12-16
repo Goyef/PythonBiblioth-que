@@ -13,6 +13,9 @@ class Livre:
         self.nb_pages = nb_pages
         self.maison_edition = maison_edition
 
+    def fetch_info(self, id: int):
+        if id == self.id:
+            return [self.id, self.titre, self.isbn, self.annee_publi, self.auteur, self.nb_exemplaires_dispo, self.Descritpion, self.categorie, self.language, self.nb_pages, self.maison_edition]
 #auteur
 class Auteur:
     def __init__(self, id: int, nom: str, prenom: str, biographie: str,nationalite: str, date_naissance: str, date_deces: str):
