@@ -14,10 +14,19 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/all")
-def get_livres(db: Session = Depends(get_db)):
-    livres = db.query(Livre).all()
-    return {"livres": [{"id": l.id, "titre": l.titre, "auteur": l.auteur, "annee_publi": l.annee_publi} for l in livres]}
+@router.get("/")
+def get_livres(page: int = 1, db: Session = Depends(get_db)):
+    per_page = 5
+    offset = (page - 1) * per_page
+    livres = db.query(Livre).offset(offset).limit(per_page).all()
+    total = db.query(Livre).count()
+    pages = (total + per_page - 1) // per_page
+    return {
+        "livres": [{"id": l.id, "titre": l.titre, "auteur": l.auteur, "annee_publi": l.annee_publi} for l in livres],
+        "page": page,
+        "total": total,
+        "pages": pages
+    }
 
 @router.delete("/{livre_id}")
 def delete_livre(livre_id: int, db: Session = Depends(get_db)):
