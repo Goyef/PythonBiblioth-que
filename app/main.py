@@ -12,8 +12,6 @@ from app.error_handlers import (
 )
 from app.exceptions import LibraryException
 #from app.routers import author, book, loan, stats
-
-from fastapi import FastAPI
 from pydantic import BaseModel
 from app.routers.livre import router as livres_router
 
