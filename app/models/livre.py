@@ -33,7 +33,7 @@ class Livre(SQLModel, table=True):
     nb_exemplaires_dispo: int = Field(default=0, ge=0)
     nb_exemplaires_total: int = Field(gt=0)
     description: Optional[str] = Field(default=None)
-    categorie: BookCategory = Field(default=BookCategory.AUTRE)
+    categorie: Categorie_Livre = Field(default=Categorie_Livre.AUTRE)
     language: str = Field(max_length=2)  # Code langue ISO
     pages: int = Field(gt=0)
     maison_edition: str
