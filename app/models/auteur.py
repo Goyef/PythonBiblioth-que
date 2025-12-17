@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Optional
 
-from app.services.modelsClass import Livre
+from app.models.livre import Livre
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -19,4 +19,4 @@ class Auteur(SQLModel, table=True):
     date_deces: Optional[date] = Field(default=None)
 
     # Relations
-    livres: list["Livre"] = Relationship(match="auteur")
+    livres: list["Livre"] = Relationship(back_populates="auteur")

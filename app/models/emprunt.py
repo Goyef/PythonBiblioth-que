@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from app.models import Livre
+from app.models.livre import Livre
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -30,7 +30,7 @@ class Emprunt(SQLModel, table=True):
     statut: EmpruntStatus = Field(default=EmpruntStatus.ACTIVE)
 
     # Relations
-    livre: "Livre" = Relationship(match="emprunts")
+    livre: "Livre" = Relationship(back_populates="emprunts")
 
 
 
