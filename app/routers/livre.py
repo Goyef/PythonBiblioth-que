@@ -28,6 +28,13 @@ def get_livres(page: int = 1, db: Session = Depends(get_db)):
         "pages": pages
     }
 
+@router.get("/{livre_id}")
+def get_livre(livre_id: int, db: Session = Depends(get_db)):
+    livre = db.query(Livre).filter(Livre.id == livre_id).first()
+    if not livre:
+        raise HTTPException(status_code=404, detail="Livre non trouvé")
+    return {"id": livre.id, "titre": livre.titre, "auteur": livre.auteur, "annee_publi": livre.annee_publi}
+
 @router.delete("/{livre_id}")
 def delete_livre(livre_id: int, db: Session = Depends(get_db)):
     livre = db.query(Livre).filter(Livre.id == livre_id).first()
@@ -36,7 +43,7 @@ def delete_livre(livre_id: int, db: Session = Depends(get_db)):
     db.delete(livre)
     db.commit()
     return {"message": f"Livre {livre_id} supprimé"}
-
+# ON A PAS DE GET DETAILL2
 @router.post("/add")
 def ajouter_livre(titre: str, isbn: str, annee_publi: int, auteur: str, nb_exemplaires_dispo: int, Descritpion: str, categorie: str, language: str, nb_pages: int, maison_edition: str, db: Session = Depends(get_db)):
     new_livre = Livre(
