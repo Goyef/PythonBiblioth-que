@@ -1,7 +1,7 @@
 import re
 from datetime import date, datetime
 
-from app.core.exceptions import InvalidISBNException
+from app.exceptions import InvalidISBNException
 
 
 def validate_isbn13(isbn: str) -> str:

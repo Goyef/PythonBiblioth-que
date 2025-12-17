@@ -1,8 +1,10 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
-from app.models import Auteur, Emprunt
+# from app.models.emprunt import Emprunt
+from app.models.auteur import Auteur
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
+
 
 
 class Categorie_Livre(str, Enum):
@@ -39,5 +41,5 @@ class Livre(SQLModel, table=True):
     maison_edition: str
 
     # Relations
-    auteur: "Auteur" = Relationship(match="livres")
-    # emprunts: list["Emprunt"] = Relationship(match="livre_id")
+    auteur: Auteur = Relationship(back_populates="livre")
+    # emprunts: list["Emprunt"] = Relationship(back_populates="livre")
