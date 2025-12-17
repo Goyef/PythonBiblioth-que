@@ -4,8 +4,8 @@ from sqlmodel import func, or_, select
 
 from app.database import SessionDep
 from app.models.auteur import Auteur
-from app.models.livre import Livre, BookCategory
-from app.models.emprunt import Emprunt, EmpruntStatus
+from app.models.livre import Livre, Categorie_Livre
+# from app.models.emprunt import Emprunt, EmpruntStatus
 from app.schemas.livre import BookCreate, BookRead, BookReadWithAuthor, BookUpdate
 from app.schemas.common import MessageResponse, PaginatedResponse
 
@@ -81,7 +81,7 @@ def search_books(
     title: Optional[str] = None,
     author_name: Optional[str] = None,
     isbn: Optional[str] = None,
-    category: Optional[BookCategory] = None,
+    category: Optional[Categorie_Livre] = None,
     year: Optional[int] = None,
     year_min: Optional[int] = None,
     year_max: Optional[int] = None,
@@ -94,12 +94,12 @@ def search_books(
 
     # Appliquer les filtres
     if title:
-        statement = statement.where(Livre.titre.ilike(f"%{title}%"))
+        statement = statement.where(Livre.titre(f"%{title}%"))
     if author_name:
         statement = statement.where(
             or_(
-                Auteur.prenom.ilike(f"%{author_name}%"),
-                Auteur.nom.ilike(f"%{author_name}%"),
+                Auteur.prenom(f"%{author_name}%"),
+                Auteur.nom(f"%{author_name}%"),
             )
         )
 
@@ -123,7 +123,7 @@ def search_books(
         statement = statement.where(Livre.language == language.lower())
 
     if available_only:
-        statement = statement.where(Livre.available_copies > 0)
+        statement = statement.where(Livre.nb_exemplaires_dispo > 0)
 
     # Compter le total
     count_statement = select(func.count()).select_from(statement.subquery())

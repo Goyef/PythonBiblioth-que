@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional, List
 
-from app.models.emprunt import Emprunt
+# from app.models.emprunt import Emprunt
 from app.models.auteur import Auteur
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
@@ -42,4 +42,4 @@ class Livre(SQLModel, table=True):
 
     # Relations
     auteur: Auteur = Relationship(back_populates="livre")
-    emprunts: list["Emprunt"] = Relationship(back_populates="livre")
+    # emprunts: list["Emprunt"] = Relationship(back_populates="livre")
