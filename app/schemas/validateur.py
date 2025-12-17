@@ -4,7 +4,7 @@ from datetime import date, datetime
 from app.core.exceptions import InvalidISBNException
 
 
-def valider_isbn13(isbn: str) -> str:
+def validate_isbn13(isbn: str) -> str:
     """
     Valide un ISBN-13 selon l'algorithme de checksum.
 
@@ -39,7 +39,7 @@ def valider_isbn13(isbn: str) -> str:
     return clean_isbn
 
 
-def valider_annee_publication(year: int) -> int:
+def validate_publication_year(year: int) -> int:
     """
     Valide l'année de publication.
 
@@ -58,13 +58,13 @@ def valider_annee_publication(year: int) -> int:
     return year
 
 
-def valider_annee_naissance(annee_naissance: date, annee_deces: date | None = None) -> date:
+def validate_birth_date(birth_date: date, death_date: date | None = None) -> date:
     """
     Valide la date de naissance d'un auteur.
 
     Args:
-        annee_naissance: La date de naissance
-        annee_deces: La date de décès (optionnelle)
+        birth_date: La date de naissance
+        death_date: La date de décès (optionnelle)
 
     Returns:
         La date de naissance validée
@@ -72,21 +72,21 @@ def valider_annee_naissance(annee_naissance: date, annee_deces: date | None = No
     Raises:
         ValueError: Si la date est invalide
     """
-    if annee_naissance > date.today():
+    if birth_date > date.today():
         raise ValueError("La date de naissance ne peut pas être dans le futur")
 
-    if annee_deces and annee_naissance >= annee_deces:
+    if death_date and birth_date >= death_date:
         raise ValueError("La date de naissance doit être antérieure à la date de décès")
 
-    return annee_naissance
+    return birth_date
 
 
-def valider_exemplaires_disponibles(dispo: int, total: int) -> int:
+def validate_available_copies(available: int, total: int) -> int:
     """
     Valide que les exemplaires disponibles ne dépassent pas le total.
 
     Args:
-        dispo: Nombre d'exemplaires disponibles
+        available: Nombre d'exemplaires disponibles
         total: Nombre total d'exemplaires
 
     Returns:
@@ -95,10 +95,10 @@ def valider_exemplaires_disponibles(dispo: int, total: int) -> int:
     Raises:
         ValueError: Si la validation échoue
     """
-    if dispo < 0:
+    if available < 0:
         raise ValueError("Le nombre d'exemplaires disponibles ne peut pas être négatif")
 
-    if dispo > total:
+    if available > total:
         raise ValueError("Le nombre d'exemplaires disponibles ne peut pas dépasser le total")
 
-    return dispo
+    return available

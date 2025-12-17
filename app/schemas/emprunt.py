@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from app.models.loan import LoanStatus
 
 
-class EmpruntBase(BaseModel):
+class LoanBase(BaseModel):
     """Schema de base pour un emprunt"""
 
     book_id: int
@@ -16,7 +16,7 @@ class EmpruntBase(BaseModel):
 
     @field_validator("library_card_number")
     @classmethod
-    def valider_numero_carte_biblio(cls, v: str) -> str:
+    def validate_card_number(cls, v: str) -> str:
         """Valide le numéro de carte de bibliothèque"""
         if not v or len(v) < 5:
             raise ValueError(
@@ -25,13 +25,13 @@ class EmpruntBase(BaseModel):
         return v
 
 
-class CreerEmprunt(EmpruntBase):
+class LoanCreate(LoanBase):
     """Schema pour créer un emprunt"""
 
     comments: Optional[str] = None
 
 
-class LireEmprunt(EmpruntBase):
+class LoanRead(LoanBase):
     """Schema pour lire un emprunt"""
 
     id: int
@@ -46,20 +46,20 @@ class LireEmprunt(EmpruntBase):
         from_attributes = True
 
 
-class ReturnEmprunt(BaseModel):
+class LoanReturn(BaseModel):
     """Schema pour retourner un livre"""
 
     return_date: Optional[datetime] = None
     comments: Optional[str] = None
 
 
-class RenouvelEmprunt(BaseModel):
+class LoanRenew(BaseModel):
     """Schema pour renouveler un emprunt"""
 
     pass
 
 
-class LireDetailEmprunt(LireEmprunt):
+class LoanReadWithDetails(LoanRead):
     """Schema pour lire un emprunt avec les détails du livre"""
 
     book_title: str = ""

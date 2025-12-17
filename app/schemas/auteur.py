@@ -3,10 +3,10 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, HttpUrl, field_validator
 
-from app.schemas.validateur import valider_annee_naissance
+from app.schemas.validators import validate_birth_date
 
 
-class AuteurBase(BaseModel):
+class AuthorBase(BaseModel):
     """Schema de base pour un auteur"""
 
     first_name: str
@@ -19,7 +19,7 @@ class AuteurBase(BaseModel):
 
     @field_validator("nationality")
     @classmethod
-    def valider_nationalite(cls, v: str) -> str:
+    def validate_nationality(cls, v: str) -> str:
         """Valide que la nationalité est un code pays ISO de 2 lettres"""
         if len(v) != 2 or not v.isalpha():
             raise ValueError("La nationalité doit être un code pays ISO de 2 lettres")
@@ -27,19 +27,19 @@ class AuteurBase(BaseModel):
 
     @field_validator("birth_date")
     @classmethod
-    def valider_champs_date_naissance(cls, v: date, info) -> date:
+    def validate_birth_date_field(cls, v: date, info) -> date:
         """Valide la date de naissance"""
         death_date = info.data.get("death_date")
-        return valider_annee_naissance(v, death_date)
+        return validate_birth_date(v, death_date)
 
 
-class CreerAuteur(AuteurBase):
+class AuthorCreate(AuthorBase):
     """Schema pour créer un auteur"""
 
     pass
 
 
-class UpdateAuteur(BaseModel):
+class AuthorUpdate(BaseModel):
     """Schema pour mettre à jour un auteur (tous les champs optionnels)"""
 
     first_name: Optional[str] = None
@@ -52,7 +52,7 @@ class UpdateAuteur(BaseModel):
 
     @field_validator("nationality")
     @classmethod
-    def valider_nationalite(cls, v: Optional[str]) -> Optional[str]:
+    def validate_nationality(cls, v: Optional[str]) -> Optional[str]:
         """Valide que la nationalité est un code pays ISO de 2 lettres"""
         if v is not None:
             if len(v) != 2 or not v.isalpha():
@@ -61,7 +61,7 @@ class UpdateAuteur(BaseModel):
         return v
 
 
-class LireAuteur(AuteurBase):
+class AuthorRead(AuthorBase):
     """Schema pour lire un auteur"""
 
     id: int
@@ -70,7 +70,7 @@ class LireAuteur(AuteurBase):
         from_attributes = True
 
 
-class LireAuteurLivre(LireAuteur):
+class AuthorWithBooks(AuthorRead):
     """Schema pour lire un auteur avec ses livres"""
 
     books_count: int = 0

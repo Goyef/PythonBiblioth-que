@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional
 
 from app.models import Auteur, Emprunt
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
 
 class Categorie_Livre(str, Enum):
@@ -40,4 +40,4 @@ class Livre(SQLModel, table=True):
 
     # Relations
     auteur: "Auteur" = Relationship(match="livres")
-    emprunts: list["Emprunt"] = Relationship(match="livre")
+    # emprunts: list["Emprunt"] = Relationship(match="livre_id")
