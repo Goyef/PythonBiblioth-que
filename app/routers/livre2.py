@@ -1,4 +1,4 @@
-""""
+
 from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import func, or_, select
 
@@ -100,4 +100,4 @@ def update_livre(livre_id: int, titre: str | None = None, isbn: str | None = Non
         livre.maison_edition = maison_edition
 
     db.commit()
-    return {"message": f"Livre {livre_id} mis à jour avec succès"}"""
+    return {"message": f"Livre {livre_id} mis à jour avec succès"}
