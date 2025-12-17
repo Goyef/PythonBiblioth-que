@@ -1,13 +1,10 @@
 from enum import Enum
-from typing import Optional, List
-
-# from app.models.emprunt import Emprunt
-from app.models.auteur import Auteur
-from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
+from typing import Optional
+from app.models.auteur import Author
+from sqlmodel import Field, Relationship, SQLModel
 
 
-
-class Categorie_Livre(str, Enum):
+class BookCategory(str, Enum):
     """Catégories littéraires"""
 
     FICTION = "Fiction"
@@ -22,24 +19,24 @@ class Categorie_Livre(str, Enum):
     AUTRE = "Autre"
 
 
-class Livre(SQLModel, table=True):
+class Book(SQLModel, table=True):
     """Modèle représentant un livre"""
 
-    __tablename__ = "livres"
+    __tablename__ = "books"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    titre: str = Field(index=True)
+    title: str = Field(index=True)
     isbn: str = Field(unique=True, index=True, max_length=17)
-    annee_publi: int
-    auteur_id: int = Field(foreign_key="auteurs.id", index=True)
-    nb_exemplaires_dispo: int = Field(default=0, ge=0)
-    nb_exemplaires_total: int = Field(gt=0)
+    publication_year: int
+    author_id: int = Field(foreign_key="authors.id", index=True)
+    available_copies: int = Field(default=0, ge=0)
+    total_copies: int = Field(gt=0)
     description: Optional[str] = Field(default=None)
-    categorie: Categorie_Livre = Field(default=Categorie_Livre.AUTRE)
+    category: BookCategory = Field(default=BookCategory.AUTRE)
     language: str = Field(max_length=2)  # Code langue ISO
     pages: int = Field(gt=0)
-    maison_edition: str
+    publisher: str
 
     # Relations
-    auteur: Auteur = Relationship(back_populates="livre")
-    # emprunts: list["Emprunt"] = Relationship(back_populates="livre")
+    author: "Author" = Relationship(back_populates="books")
+    #loans: list["Loan"] = Relationship(back_populates="book")

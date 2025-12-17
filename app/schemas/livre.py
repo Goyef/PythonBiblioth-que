@@ -2,8 +2,8 @@ from typing import Optional
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from app.models.book import BookCategory
-from app.schemas.validators import (
+from app.models.livre import BookCategory
+from app.schemas.validateur import (
     validate_available_copies,
     validate_isbn13,
     validate_publication_year,

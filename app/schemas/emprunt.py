@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, field_validator
 
-from app.models.loan import LoanStatus
+from app.models.emprunt import LoanStatus
 
 
 class LoanBase(BaseModel):

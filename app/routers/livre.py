@@ -1,11 +1,12 @@
 from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import func, or_, select
 
 from app.database import SessionDep
-from app.models.auteur import Auteur
-from app.models.livre import Livre, Categorie_Livre
-# from app.models.emprunt import Emprunt, EmpruntStatus
+from app.models.auteur import Author
+from app.models.livre import Book, BookCategory
+from app.models.emprunt import Loan, LoanStatus
 from app.schemas.livre import BookCreate, BookRead, BookReadWithAuthor, BookUpdate
 from app.schemas.common import MessageResponse, PaginatedResponse
 
@@ -16,17 +17,17 @@ router = APIRouter(prefix="/books", tags=["Livres"])
 def create_book(book: BookCreate, session: SessionDep):
     """Créer un nouveau livre"""
     # Vérifier l'unicité de l'ISBN
-    statement = select(Livre).where(Livre.isbn == book.isbn)
+    statement = select(Book).where(Book.isbn == book.isbn)
     existing = session.exec(statement).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"Un livre avec l'ISBN {book.isbn} existe déjà")
 
     # Vérifier que l'auteur existe
-    author = session.get(Auteur, book.auteur_id)
+    author = session.get(Author, book.author_id)
     if not author:
         raise HTTPException(status_code=404, detail="Auteur non trouvé")
 
-    db_book = Livre.model_validate(book)
+    db_book = Book.model_validate(book)
     session.add(db_book)
     session.commit()
     session.refresh(db_book)
@@ -43,17 +44,17 @@ def list_books(
 ):
     """Lister tous les livres avec pagination"""
     # Construction de la requête de base
-    statement = select(Livre)
+    statement = select(Book)
 
     # Tri
-    sort_column = getattr(Livre, sort_by)
+    sort_column = getattr(Book, sort_by)
     if order == "desc":
         statement = statement.order_by(sort_column.desc())
     else:
         statement = statement.order_by(sort_column)
 
     # Compter le total
-    count_statement = select(func.count()).select_from(Livre)
+    count_statement = select(func.count()).select_from(Book)
     total = session.exec(count_statement).one()
 
     # Pagination
@@ -81,7 +82,7 @@ def search_books(
     title: Optional[str] = None,
     author_name: Optional[str] = None,
     isbn: Optional[str] = None,
-    category: Optional[Categorie_Livre] = None,
+    category: Optional[BookCategory] = None,
     year: Optional[int] = None,
     year_min: Optional[int] = None,
     year_max: Optional[int] = None,
@@ -90,40 +91,41 @@ def search_books(
 ):
     """Recherche avancée de livres avec multiples critères"""
     # Construction de la requête avec jointure sur Author
-    statement = select(Livre, Auteur).join(Auteur, Livre.auteur_id == Auteur.id)
+    statement = select(Book, Author).join(Author, Book.author_id == Author.id)
 
     # Appliquer les filtres
     if title:
-        statement = statement.where(Livre.titre(f"%{title}%"))
+        statement = statement.where(Book.title.ilike(f"%{title}%"))
+
     if author_name:
         statement = statement.where(
             or_(
-                Auteur.prenom(f"%{author_name}%"),
-                Auteur.nom(f"%{author_name}%"),
+                Author.first_name.ilike(f"%{author_name}%"),
+                Author.last_name.ilike(f"%{author_name}%"),
             )
         )
 
     if isbn:
         clean_isbn = isbn.replace("-", "").replace(" ", "")
-        statement = statement.where(Livre.isbn == clean_isbn)
+        statement = statement.where(Book.isbn == clean_isbn)
 
     if category:
-        statement = statement.where(Livre.categorie == category)
+        statement = statement.where(Book.category == category)
 
     if year:
-        statement = statement.where(Livre.annee_publi == year)
+        statement = statement.where(Book.publication_year == year)
 
     if year_min:
-        statement = statement.where(Livre.annee_publi >= year_min)
+        statement = statement.where(Book.publication_year >= year_min)
 
     if year_max:
-        statement = statement.where(Livre.annee_publi <= year_max)
+        statement = statement.where(Book.publication_year <= year_max)
 
     if language:
-        statement = statement.where(Livre.language == language.lower())
+        statement = statement.where(Book.language == language.lower())
 
     if available_only:
-        statement = statement.where(Livre.nb_exemplaires_dispo > 0)
+        statement = statement.where(Book.available_copies > 0)
 
     # Compter le total
     count_statement = select(func.count()).select_from(statement.subquery())
@@ -139,10 +141,10 @@ def search_books(
     books_with_authors = []
     for book, author in results:
         # Compter les emprunts
-        loans_count = session.exec(select(func.count()).where(Emprunt.livre_id == book.id)).one()
+        loans_count = session.exec(select(func.count()).where(Loan.book_id == book.id)).one()
 
         book_dict = book.model_dump()
-        book_dict["author_name"] = f"{author.prenom} {author.nom}"
+        book_dict["author_name"] = f"{author.first_name} {author.last_name}"
         book_dict["loans_count"] = loans_count
         books_with_authors.append(BookReadWithAuthor(**book_dict))
 
@@ -160,16 +162,17 @@ def search_books(
 @router.get("/{book_id}", response_model=BookReadWithAuthor)
 def get_book(book_id: int, session: SessionDep):
     """Récupérer les détails complets d'un livre"""
-    book = session.get(Livre, book_id)
+    book = session.get(Book, book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
 
     # Récupérer l'auteur
-    author = session.get(Auteur, book.author_id)
-    author_name = f"{author.prenom} {author.nom}" if author else "Inconnu"
+    author = session.get(Author, book.author_id)
+    author_name = f"{author.first_name} {author.last_name}" if author else "Inconnu"
 
     # Compter les emprunts
-    loans_count = session.exec(select(func.count()).where(Emprunt.livre_id == book_id)).one()
+    loans_count = session.exec(select(func.count()).where(Loan.book_id == book_id)).one()
+
     book_dict = book.model_dump()
     book_dict["author_name"] = author_name
     book_dict["loans_count"] = loans_count
@@ -180,7 +183,7 @@ def get_book(book_id: int, session: SessionDep):
 @router.patch("/{book_id}", response_model=BookRead)
 def update_book(book_id: int, book_update: BookUpdate, session: SessionDep):
     """Mettre à jour un livre"""
-    db_book = session.get(Livre, book_id)
+    db_book = session.get(Book, book_id)
     if not db_book:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
 
@@ -189,7 +192,7 @@ def update_book(book_id: int, book_update: BookUpdate, session: SessionDep):
 
     # Vérifier l'unicité de l'ISBN si modifié
     if "isbn" in update_data:
-        statement = select(Livre).where(Livre.isbn == update_data["isbn"], Livre.id != book_id)
+        statement = select(Book).where(Book.isbn == update_data["isbn"], Book.id != book_id)
         existing = session.exec(statement).first()
         if existing:
             raise HTTPException(
@@ -199,7 +202,7 @@ def update_book(book_id: int, book_update: BookUpdate, session: SessionDep):
 
     # Vérifier que l'auteur existe si modifié
     if "author_id" in update_data:
-        author = session.get(Auteur, update_data["author_id"])
+        author = session.get(Author, update_data["author_id"])
         if not author:
             raise HTTPException(status_code=404, detail="Auteur non trouvé")
 
@@ -224,15 +227,15 @@ def update_book(book_id: int, book_update: BookUpdate, session: SessionDep):
 @router.delete("/{book_id}", response_model=MessageResponse)
 def delete_book(book_id: int, session: SessionDep):
     """Supprimer un livre (seulement s'il n'a pas d'emprunts actifs)"""
-    db_book = session.get(Livre, book_id)
+    db_book = session.get(Book, book_id)
     if not db_book:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
 
     # Vérifier qu'il n'y a pas d'emprunts actifs
     active_loans = session.exec(
         select(func.count()).where(
-            Emprunt.livre_id == book_id,
-            or_(Emprunt.statut == EmpruntStatus.ACTIVE, Emprunt.statut == EmpruntStatus.LATE),
+            Loan.book_id == book_id,
+            or_(Loan.status == LoanStatus.ACTIVE, Loan.status == LoanStatus.LATE),
         )
     ).one()
 
