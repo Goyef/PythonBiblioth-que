@@ -1,0 +1,43 @@
+from enum import Enum
+from typing import Optional
+
+from app.models import Auteur, Emprunt
+from sqlmodel import Field, Relationship, SQLModel
+
+
+class Categorie_Livre(str, Enum):
+    """Catégories littéraires"""
+
+    FICTION = "Fiction"
+    SCIENCE = "Science"
+    HISTOIRE = "Histoire"
+    PHILOSOPHIE = "Philosophie"
+    BIOGRAPHIE = "Biographie"
+    POESIE = "Poésie"
+    THEATRE = "Théâtre"
+    JEUNESSE = "Jeunesse"
+    BD = "BD"
+    AUTRE = "Autre"
+
+
+class Livre(SQLModel, table=True):
+    """Modèle représentant un livre"""
+
+    __tablename__ = "livres"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    titre: str = Field(index=True)
+    isbn: str = Field(unique=True, index=True, max_length=17)
+    annee_publi: int
+    auteur_id: int = Field(foreign_key="auteurs.id", index=True)
+    nb_exemplaires_dispo: int = Field(default=0, ge=0)
+    nb_exemplaires_total: int = Field(gt=0)
+    description: Optional[str] = Field(default=None)
+    categorie: BookCategory = Field(default=BookCategory.AUTRE)
+    language: str = Field(max_length=2)  # Code langue ISO
+    pages: int = Field(gt=0)
+    maison_edition: str
+
+    # Relations
+    auteur: "Auteur" = Relationship(match="livres")
+    emprunts: list["Emprunt"] = Relationship(match="livre")
