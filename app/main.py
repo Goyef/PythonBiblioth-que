@@ -10,7 +10,6 @@ from app.error_handlers import (
     validation_exception_handler,
 )
 from app.exceptions import LibraryException
-from app.routers.book import router as livres_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,6 +21,7 @@ async def lifespan(app: FastAPI):
     pass
 from app.routers.book import router as livres_router
 from app.routers.author import router as auteurs_router
+from app.routers.loan import router as loans_router
 
 app = FastAPI(
     title="Bibliothèque API",
@@ -48,6 +48,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 app.include_router(livres_router)
 app.include_router(auteurs_router)
+app.include_router(loans_router)
 
 class Item(BaseModel):
     name: str

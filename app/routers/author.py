@@ -5,10 +5,10 @@ from app.database import get_session
 
 router = APIRouter(
     prefix="/authors",
-    tags=["authors"]
+    tags=["Auteurs"]
 )
 
-@router.get("/authors")
+@router.get("/")
 def get_authors(page: int = 1, db: Session = Depends(get_session)):
     per_page = 5
     offset = (page - 1) * per_page
