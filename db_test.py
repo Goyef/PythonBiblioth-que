@@ -1,4 +1,4 @@
-from app.models import Base, engine, Session, Livre, Auteur, Emprunt, Historique
+from app.models import Base, engine, Session, Book, Auteur, Emprunt, Historique
 
 # Créer les tables
 Base.metadata.create_all(engine)
@@ -27,7 +27,7 @@ auteur2 = Auteur(
 )
 
 # Livres
-livre1 = Livre(
+livre1 = Book(
     titre="Python Avancé",
     isbn="1234567890123",
     annee_publi=2023,
@@ -40,7 +40,7 @@ livre1 = Livre(
     maison_edition="TechPress"
 )
 
-livre2 = Livre(
+livre2 = Book(
     titre="Les Aventures de Toto",
     isbn="9876543210987",
     annee_publi=2022,
