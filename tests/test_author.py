@@ -8,19 +8,15 @@ def client():
     return TestClient(app)
 
 @pytest.fixture
-def sample_book_data():
-    # DOnnée d'un livre d'exemple
+def sample_author_data():
+    # Donnée d'un auteur d'exemple
     return {
-        "title": "super livre du test ultime",
-        "isbn": "1234567890128",
-        "publication_year": 2020,
-        "author_id": "1",
-        "available_copies": 30,
-        "description": "il est l élu",
-        "category": "Fiction",
-        "language": "Fr",
-        "pages": 250,
-        "publisher": "Maison de Test"
+        "last_name": "PATATOR",
+        "first_name": "John",
+        "biographie": "auteur fictif",
+        "nationalite": "Francaise",
+        "date_naissance": "1970-01-01",
+        # "date_deces": None
     }
 
 @pytest.fixture
@@ -39,28 +35,26 @@ def db_session():
     finally:
         db.close()
 
-
 #TEST
 
-# création livre
-def test_create_book(client, sample_book_data):
-    response = client.post("/books/add", params=sample_book_data)
+# création auteur
+def test_create_author(client, sample_author_data):
+    response = client.post("/authors/add", params=sample_author_data)
     assert response.status_code == 200
     data = response.json()
-    assert "livre_id" in data
-    assert data["message"] == "Livre ajouté avec succès"
-
-#getter marche ?
-def test_get_books(client):
-    response = client.get("/books/")
+    assert "auteur_id" in data
+    assert data["message"] == "Auteur ajouté avec succès"
+#getter
+def test_get_authors(client):
+    response = client.get("/authors/")
     assert response.status_code == 200
     data = response.json()
-    assert "livres" in data
+    assert "authors" in data
     assert "page" in data
     assert "total" in data
     assert "pages" in data
 
-# 404 si pas de livre
-def test_no_books_found(client):
-    response = client.get("/books/?page=99999")
+# 404
+def test_no_authors_found(client):
+    response = client.get("/authors/?page=99999")
     assert response.status_code == 404 or response.status_code == 200
