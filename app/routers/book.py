@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import Session as SessionLocal, Livre
+from app.models import  Book
+from app.database import SessionDep as SessionLocal
+from app.database import get_session
 
 router = APIRouter(
-    prefix="/livres",
+    prefix="/books",
     tags=["livres"]
 )
 
@@ -18,11 +20,11 @@ def get_db():
 def get_livres(page: int = 1, db: Session = Depends(get_db)):
     per_page = 5
     offset = (page - 1) * per_page
-    livres = db.query(Livre).offset(offset).limit(per_page).all()
-    total = db.query(Livre).count()
+    livres = db.query(Book).offset(offset).limit(per_page).all()
+    total = db.query(Book).count()
     pages = (total + per_page - 1) // per_page
     return {
-        "livres": [{"id": l.id, "titre": l.titre, "auteur": l.auteur, "annee_publi": l.annee_publi} for l in livres],
+        "livres": [{"id": l.id, "titre": l.title, "auteur": l.author, "annee_publi": l.publication_year} for l in livres],
         "page": page,
         "total": total,
         "pages": pages
@@ -30,7 +32,7 @@ def get_livres(page: int = 1, db: Session = Depends(get_db)):
 
 @router.delete("/{livre_id}")
 def delete_livre(livre_id: int, db: Session = Depends(get_db)):
-    livre = db.query(Livre).filter(Livre.id == livre_id).first()
+    livre = db.query(Book).filter(Book.id == livre_id).first()
     if not livre:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
     db.delete(livre)
@@ -38,18 +40,18 @@ def delete_livre(livre_id: int, db: Session = Depends(get_db)):
     return {"message": f"Livre {livre_id} supprimé"}
 
 @router.post("/add")
-def ajouter_livre(titre: str, isbn: str, annee_publi: int, auteur: str, nb_exemplaires_dispo: int, Descritpion: str, categorie: str, language: str, nb_pages: int, maison_edition: str, db: Session = Depends(get_db)):
-    new_livre = Livre(
-        titre=titre,
+def ajouter_livre(title: str, isbn: str, publication_year: int, auteur_id: str, available_copies: int, description: str, category: str, language: str, pages: int, publisher: str, db: Session = Depends(get_session)):
+    new_livre = Book(
+        title=title,
         isbn=isbn,
-        annee_publi=annee_publi,
-        auteur=auteur,
-        nb_exemplaires_dispo=nb_exemplaires_dispo,
-        Descritpion=Descritpion,
-        categorie=categorie,
+        publication_year=publication_year,
+        auteur_id=auteur_id,
+        available_copies=available_copies,
+        description=description,
+        category=category,
         language=language,
-        nb_pages=nb_pages,
-        maison_edition=maison_edition
+        pages=pages,
+        publisher=publisher
     )
     db.add(new_livre)
     db.commit()
@@ -58,7 +60,7 @@ def ajouter_livre(titre: str, isbn: str, annee_publi: int, auteur: str, nb_exemp
 
 @router.put("/update/{livre_id}")
 def update_livre(livre_id: int, titre: str | None = None, isbn: str | None = None, annee_publi: int | None = None, auteur: str | None = None, nb_exemplaires_dispo: int | None = None, Descritpion: str | None = None, categorie: str | None = None, language: str | None = None, nb_pages: int | None = None, maison_edition: str | None = None, db: Session = Depends(get_db)):
-    livre = db.query(Livre).filter(Livre.id == livre_id).first()
+    livre = db.query(Book).filter(Book.id == livre_id).first()
     
     if not livre:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
