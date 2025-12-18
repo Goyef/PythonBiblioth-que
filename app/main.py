@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from app.routers.items import router as livres_router
+from app.routers.book import router as livres_router
+from app.routers.author import router as auteurs_router
 
 app = FastAPI(
     title="Bibliothèque API",
@@ -9,6 +10,7 @@ app = FastAPI(
 )
 
 app.include_router(livres_router)
+app.include_router(auteurs_router)
 
 class Item(BaseModel):
     name: str
