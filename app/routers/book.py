@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models import  Author, Book, CategorieEnum
 from app.database import get_session
-from app.exceptions import AuthorNotFoundException
-
+from app.validators import validate_isbn13
 router = APIRouter(
     prefix="/books",
     tags=["Livres"]
@@ -35,6 +34,7 @@ def get_livre_detail(livre_id: int, db: Session = Depends(get_session)):
         "annee_publi": livre.publication_year,
         "auteur ": livre.authors.first_name + " " + livre.authors.last_name,
         "nb_exemplaires_dispo": livre.available_copies,
+        "nb_exemplaires_total": livre.total_copies,
         "description": livre.description,
         "categorie": livre.category,
         "language": livre.language,
@@ -51,19 +51,21 @@ def delete_livre(livre_id: int, db: Session = Depends(get_session)):
     return {"message": f"Livre {livre_id} supprimé"}
 
 @router.post("/add")
-def ajouter_livre(title: str, isbn: str, publication_year: int, author_id: str, available_copies: int, description: str, category: str, language: str, pages: int, publisher: str, db: Session = Depends(get_session)):
+def ajouter_livre(title: str, isbn: str, publication_year: int, author_id: int, available_copies: int, total_copies: int, description: str, category: str, language: str, pages: int, publisher: str, db: Session = Depends(get_session)):
     new_livre = Book(
         title=title,
         isbn=isbn,
         publication_year=publication_year,
         author_id=author_id,
         available_copies=available_copies,
+        total_copies=total_copies,
         description=description,
         category=category,
         language=language,
         pages=pages,
         publisher=publisher
     )
+    validate_isbn13(isbn)
 
     author = db.get(Author, author_id)
     if not author:
@@ -88,25 +90,25 @@ def update_livre(livre_id: int, titre: str | None = None, isbn: str | None = Non
         raise HTTPException(status_code=404, detail="Livre non trouvé")
     
     if titre is not None:
-        livre.titre = titre
+        livre.title = titre
     if isbn is not None:
         livre.isbn = isbn
     if annee_publi is not None:
-        livre.annee_publi = annee_publi
+        livre.publication_year = annee_publi
     if auteur is not None:
-        livre.auteur = auteur
+        livre.authors = auteur
     if nb_exemplaires_dispo is not None:
-        livre.nb_exemplaires_dispo = nb_exemplaires_dispo
+        livre.available_copies = nb_exemplaires_dispo
     if Descritpion is not None:
-        livre.Descritpion = Descritpion
+        livre.description = Descritpion
     if categorie is not None:
-        livre.categorie = categorie
+        livre.category = categorie
     if language is not None:
         livre.language = language
     if nb_pages is not None:
-        livre.nb_pages = nb_pages
+        livre.pages = nb_pages
     if maison_edition is not None:
-        livre.maison_edition = maison_edition
+        livre.publisher = maison_edition
 
     db.commit()
     return {"message": f"Livre {livre_id} mis à jour avec succès"}

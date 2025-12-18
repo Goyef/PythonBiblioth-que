@@ -28,6 +28,7 @@ class Book(Base):
     publication_year = Column(Integer)
     
     available_copies = Column(Integer)
+    total_copies = Column(Integer)
     description = Column(String)
     
     category = Column(
@@ -52,11 +53,11 @@ class Author(Base):
     id = Column(Integer, primary_key=True)
     last_name = Column(String(100), nullable=False)
     first_name = Column(String(100), nullable=False)
-    biographie = Column(String)
+    biographie = Column(String, nullable=True)
     nationalite = Column(String(50))
     birthdate = Column(String)
-    death_date = Column(String)
-    website = Column(String(100))
+    death_date = Column(String, nullable=True)
+    website = Column(String(100), nullable=True)
 
     books = relationship("Book", back_populates="authors")
 

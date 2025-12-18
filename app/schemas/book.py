@@ -78,12 +78,13 @@ class BookCreate(BookBase):
 class BookUpdate(BaseModel):
     """Schema pour mettre à jour un livre (tous les champs optionnels)"""
 
+
     title: Optional[str] = None
     isbn: Optional[str] = None
     publication_year: Optional[int] = None
     author_id: Optional[int] = None
     available_copies: Optional[int] = None
-    total_copies: Optional[int] = None
+    total_copies: Optional[int] = None  # si tu n'en as pas en DB, ignore-le
     description: Optional[str] = None
     category: Optional[BookCategory] = None
     language: Optional[str] = None
