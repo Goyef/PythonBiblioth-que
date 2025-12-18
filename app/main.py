@@ -20,6 +20,8 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     pass
+from app.routers.book import router as livres_router
+from app.routers.author import router as auteurs_router
 
 app = FastAPI(
     title="Bibliothèque API",
@@ -45,6 +47,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
 app.include_router(livres_router)
+app.include_router(auteurs_router)
 
 class Item(BaseModel):
     name: str
