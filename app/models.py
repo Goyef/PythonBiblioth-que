@@ -18,7 +18,7 @@ class Book(Base):
     pages = Column(Integer)
     publisher = Column(String(100))
 
-    auteur_id = Column(Integer, ForeignKey("authors.id", ondelete="RESTRICT"), nullable=False, index=True)
+    author_id = Column(Integer, ForeignKey("authors.id", ondelete="RESTRICT"), nullable=False, index=True)
     authors = relationship("Author", back_populates="books")
     loans = relationship("Loan", back_populates="books")
     loan_history = relationship("LoanHistory", back_populates="books")
