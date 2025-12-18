@@ -1,8 +1,24 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
+import enum
+from sqlalchemy import Column, Enum, ForeignKey, Integer, String, create_engine
 from sqlalchemy.orm import relationship, declarative_base, sessionmaker
 
 Base = declarative_base()
 
+class CategorieEnum(str, enum.Enum):
+    """Énumération des catégories littéraires"""
+    FICTION = "Fiction"
+    SCIENCE = "Science"
+    HISTOIRE = "Histoire"
+    PHILOSOPHIE = "Philosophie"
+    AUTRE = "Autre" 
+
+
+class StatutEmpruntEnum(str, enum.Enum):
+    """Énumération des statuts d'emprunt"""
+    ACTIF = "Actif"
+    RETOURNE = "Retourné"
+    EN_RETARD = "En retard"
+    
 class Book(Base):
     __tablename__ = 'books'
     
@@ -13,7 +29,13 @@ class Book(Base):
     
     available_copies = Column(Integer)
     description = Column(String)
-    category = Column(String(50))
+    
+    category = Column(
+        Enum(CategorieEnum, name="categorie_enum"),  
+        nullable=False,
+        default=CategorieEnum.AUTRE
+    )
+
     language = Column(String(50))
     pages = Column(Integer)
     publisher = Column(String(100))

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import  Book
+from app.models import  Author, Book, CategorieEnum
 from app.database import get_session
+from app.exceptions import AuthorNotFoundException
 
 router = APIRouter(
     prefix="/books",
@@ -23,6 +24,23 @@ def get_livres(page: int = 1, db: Session = Depends(get_session)):
         "pages": pages
     }
 
+@router.get("/{livre_id}")
+def get_livre_detail(livre_id: int, db: Session = Depends(get_session)):
+    livre = db.query(Book).filter(Book.id == livre_id).first()
+
+    return {
+        "id": livre.id,
+        "titre": livre.title,
+        "isbn": livre.isbn,
+        "annee_publi": livre.publication_year,
+        "auteur ": livre.authors.first_name + " " + livre.authors.last_name,
+        "nb_exemplaires_dispo": livre.available_copies,
+        "description": livre.description,
+        "categorie": livre.category,
+        "language": livre.language,
+        "nb_pages": livre.pages,
+        "maison_edition": livre.publisher
+    }
 @router.delete("/{livre_id}")
 def delete_livre(livre_id: int, db: Session = Depends(get_session)):
     livre = db.query(Book).filter(Book.id == livre_id).first()
@@ -46,6 +64,17 @@ def ajouter_livre(title: str, isbn: str, publication_year: int, author_id: str, 
         pages=pages,
         publisher=publisher
     )
+
+    author = db.get(Author, author_id)
+    if not author:
+        raise HTTPException(status_code=404, detail="Auteur non trouvé")
+
+    cat_enum = CategorieEnum.AUTRE
+    if category.upper() in CategorieEnum.__members__:
+        cat_enum = CategorieEnum[category.upper()]
+        new_livre.category = cat_enum
+    else:
+        new_livre.category = CategorieEnum.AUTRE
     db.add(new_livre)
     db.commit()
     db.refresh(new_livre)
