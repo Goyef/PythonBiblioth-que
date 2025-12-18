@@ -32,6 +32,7 @@ def delete_author(author_id: int, db: Session = Depends(get_session)):
     db.delete(author)
     db.commit()
     return {"message": f"Auteur {author_id} supprimé"}
+
 @router.post("/add")
 def ajouter_auteur(last_name: str, first_name: str, biographie: str, nationalite: str, date_naissance: str, date_deces: str | None = None, db: Session = Depends(get_session)):
     new_auteur = Auteur(
