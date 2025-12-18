@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models import  Author, Book, CategorieEnum
 from app.database import get_session
-from app.validators import validate_isbn13
+from app.schemas.book import BookCreate
 router = APIRouter(
     prefix="/books",
     tags=["Livres"]
@@ -51,29 +51,29 @@ def delete_livre(livre_id: int, db: Session = Depends(get_session)):
     return {"message": f"Livre {livre_id} supprimé"}
 
 @router.post("/add")
-def ajouter_livre(title: str, isbn: str, publication_year: int, author_id: int, available_copies: int, total_copies: int, description: str, category: str, language: str, pages: int, publisher: str, db: Session = Depends(get_session)):
+def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
     new_livre = Book(
-        title=title,
-        isbn=isbn,
-        publication_year=publication_year,
-        author_id=author_id,
-        available_copies=available_copies,
-        total_copies=total_copies,
-        description=description,
-        category=category,
-        language=language,
-        pages=pages,
-        publisher=publisher
+        title=book.title,
+        isbn=book.isbn,
+        publication_year=book.publication_year,
+        author_id=book.author_id,
+        available_copies=book.available_copies,
+        total_copies=book.total_copies,
+        description=book.description,
+        category=book.category,
+        language=book.language,
+        pages=book.pages,
+        publisher=book.publisher
     )
-    validate_isbn13(isbn)
 
-    author = db.get(Author, author_id)
+    author = db.get(Author, book.author_id)
     if not author:
         raise HTTPException(status_code=404, detail="Auteur non trouvé")
 
     cat_enum = CategorieEnum.AUTRE
-    if category.upper() in CategorieEnum.__members__:
-        cat_enum = CategorieEnum[category.upper()]
+    if book.category is not None:
+        cat_enum = book.category
+        cat_enum = CategorieEnum[book.category.upper()]
         new_livre.category = cat_enum
     else:
         new_livre.category = CategorieEnum.AUTRE

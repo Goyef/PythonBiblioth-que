@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from app.models import BookCategory
+from app.models import CategorieEnum
 from app.validators import (
     validate_available_copies,
     validate_isbn13,
@@ -20,7 +20,7 @@ class BookBase(BaseModel):
     available_copies: int
     total_copies: int
     description: Optional[str] = None
-    category: BookCategory = BookCategory.AUTRE
+    category: CategorieEnum = CategorieEnum.AUTRE
     language: str
     pages: int
     publisher: str
@@ -71,8 +71,9 @@ class BookBase(BaseModel):
 
 class BookCreate(BookBase):
     """Schema pour créer un livre"""
-    #à remplir plus tard
-    pass
+    
+    class Config:
+        from_attributes = True
 
 
 class BookUpdate(BaseModel):
@@ -86,7 +87,7 @@ class BookUpdate(BaseModel):
     available_copies: Optional[int] = None
     total_copies: Optional[int] = None  # si tu n'en as pas en DB, ignore-le
     description: Optional[str] = None
-    category: Optional[BookCategory] = None
+    category: Optional[CategorieEnum] = None
     language: Optional[str] = None
     pages: Optional[int] = None
     publisher: Optional[str] = None
@@ -122,7 +123,6 @@ class BookRead(BookBase):
     """Schema pour lire un livre"""
 
     id: int
-    
 
     class Config:
         from_attributes = True
@@ -133,3 +133,9 @@ class BookReadWithAuthor(BookRead):
 
     author_name: str = ""
     loans_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+
