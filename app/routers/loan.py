@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models import Author as Loan
+from app.models import Loan
+from app.schemas.loan import LoanRead
 from app.database import get_session
 
 router = APIRouter(
@@ -20,6 +21,24 @@ def get_loans(page: int = 1, db: Session = Depends(get_session)):
         "pages": (db.query(Loan).count() + per_page - 1)
     }
 
+@router.get("/{loan_id}", response_model=LoanRead)
+def get_loan_detail(loan_id: int, db: Session = Depends(get_session)):
+    loan = db.query(Loan).filter(Loan.id == loan_id).first()
+
+    if not loan:
+        raise HTTPException(status_code=404, detail="Emprunt non trouvé")
+
+    return {
+        "id": loan.id,
+        "nom_emprunteur": loan.nom_emprunteur,
+        "email_emprunteur": loan.email_emprunteur,
+        "book_id": loan.book_id,
+        "date_emprunt": loan.date_emprunt,
+        "date_limite_retour": loan.date_limite_retour,
+        "date_retour": loan.date_retour,
+        "statut": loan.statut
+    }
+
 @router.delete("/delete/{loan_id}")
 def delete_loan(loan_id: int, db: Session = Depends(get_session)):
     loan = db.query(Loan).filter(Loan.id == loan_id).first()
@@ -30,12 +49,13 @@ def delete_loan(loan_id: int, db: Session = Depends(get_session)):
     return {"message": f"Emprunt {loan_id} supprimé"}
 
 @router.post("/add")
-def ajouter_loan(nom_emprunteur: str, email_emprunteur: str, date_emprunt: str, date_limite_retour: str, book_id: str, statut: str, db: Session = Depends(get_session)):
+def ajouter_loan(nom_emprunteur: str, email_emprunteur: str, date_emprunt: str, date_limite_retour: str, date_retour: str, book_id: str, statut: str, db: Session = Depends(get_session)):
     new_loan = Loan(
         nom_emprunteur=nom_emprunteur,
         email_emprunteur=email_emprunteur,
         date_emprunt=date_emprunt,
         date_limite_retour=date_limite_retour,
+        date_retour=date_retour,
         book_id=book_id,
         statut=statut
     )
