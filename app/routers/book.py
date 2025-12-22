@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import desc, asc
 from app.models import  Author, Book, CategorieEnum
 from app.database import get_session
 from app.schemas.book import BookCreate, BookRead, BookReadWithAuthor, BookUpdate
@@ -12,17 +13,52 @@ router = APIRouter(
 
 
 @router.get("/" )
-def get_livres(page: int = 1, db: Session = Depends(get_session)):
-    per_page = 5
-    offset = (page - 1) * per_page
-    livres = db.query(Book).offset(offset).limit(per_page).all()
-    total = db.query(Book).count()
+def get_livres(page: int = 1, per_page: int = 5, sort_by: str = "title", order: str = "asc", db: Session = Depends(get_session)):
+    sort_column = Book.title
+    if sort_by == "author":
+        sort_column = Author.last_name
+    elif sort_by == "year":
+        sort_column = Book.publication_year
+    elif sort_by == "popularity":
+        sort_column = Book.available_copies
+    
+    sort_direction = desc if order == "desc" else asc
+    
+    if sort_by == "author":
+        total = db.query(Book).join(Author).count()
+        query = db.query(Book).join(Author).order_by(sort_direction(sort_column))
+    else:
+        total = db.query(Book).count()
+        query = db.query(Book).order_by(sort_direction(sort_column))
+    
     pages = (total + per_page - 1) // per_page
+    
+    offset = (page - 1) * per_page
+    livres = query.offset(offset).limit(per_page).all()
+    
     return {
-        "livres": [{"id": l.id, "titre": l.title, "auteur id": l.author_id, "annee_publi": l.publication_year} for l in livres],
-        "page": page,
-        "total": total,
-        "pages": pages
+        "livres": [
+            {
+                "id": l.id,
+                "titre": l.title,
+                "isbn": l.isbn,
+                "auteur id": l.author_id,
+                "auteur": l.authors.first_name + " " + l.authors.last_name,
+                "annee_publi": l.publication_year,
+                "available_copies": l.available_copies,
+                "total_copies": l.total_copies
+            } for l in livres
+        ],
+        "pagination": {
+            "page n°": page,
+            "book_per_page": per_page,
+            "number of books": total,
+            "number of pages": pages
+        },
+        "sort": {
+            "sort_by": sort_by,
+            "order": order
+        }
     }
 
 @router.get("/{livre_id}", response_model=BookReadWithAuthor)
@@ -59,6 +95,10 @@ def delete_livre(livre_id: int, db: Session = Depends(get_session)):
 
 @router.post("/add")
 def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
+    isbn_exist = db.query(Book).filter(Book.isbn == book.isbn).first()
+    if isbn_exist:
+        raise HTTPException(status_code=400, detail="ISBN déjà existant")
+    
     new_livre = Book(
         title=book.title,
         isbn=book.isbn,
@@ -116,6 +156,25 @@ def update_livre(livre_id: int, book_update: BookUpdate, db: Session = Depends(g
         livre.pages = book_update.pages
     if book_update.publisher is not None:
         livre.publisher = book_update.publisher
-
+        
+    if book_update.isbn is not None and book_update.isbn != livre.isbn:
+        isbn_exist = db.query(Book).filter(Book.isbn == book_update.isbn).first()
+        if isbn_exist:
+            raise HTTPException(status_code=400, detail="ISBN déjà existant")
     db.commit()
-    return {"message": f"Livre {livre_id} mis à jour avec succès"}
+    db.refresh(livre)
+    return {
+        "id": livre.id,
+        "title": livre.title,
+        "isbn": livre.isbn,
+        "publication_year": livre.publication_year,
+        "author_id": livre.author_id,
+        "available_copies": livre.available_copies,
+        "total_copies": livre.total_copies,
+        "description": livre.description,
+        "category": livre.category,
+        "language": livre.language,
+        "pages": livre.pages,
+        "publisher": livre.publisher,
+        "author_name": livre.authors.first_name + " " + livre.authors.last_name
+    }

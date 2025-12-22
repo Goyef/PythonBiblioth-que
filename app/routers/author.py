@@ -57,6 +57,10 @@ def ajouter_auteur(last_name: str, first_name: str,nationalite: str, date_naissa
         birthdate=date_naissance,
         death_date=date_deces
     )
+    author_exist = db.query(Auteur).filter(Auteur.last_name == last_name, Auteur.first_name == first_name).first()
+    if author_exist:
+        raise HTTPException(status_code=400, detail="Auteur déjà existant")
+    
     db.add(new_auteur)
     db.commit()
     db.refresh(new_auteur)
@@ -80,7 +84,7 @@ def update_auteur(author_id: int, last_name: str | None = None, first_name: str 
         author.birthdate = birthdate
     if death_date is not None:
         author.death_date = death_date
-
+    
     db.commit()
     db.refresh(author)
     return {"message": "Auteur mis à jour avec succès", "auteur_id": author.id}
