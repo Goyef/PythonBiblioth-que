@@ -20,6 +20,25 @@ def search_authors(
     order: str = "asc",
     db: Session = Depends(get_session),
 ):
+    """
+    Rechercher des auteurs avec filtres et pagination.
+    
+    Paramètres:
+    - page: Numéro de page (défaut: 1)
+    - per_page: Auteurs par page (défaut: 5)
+    - name: Recherche par prénom ou nom (correspondance partielle, insensible casse)
+    - nationalite: Filtrer par nationalité
+    - sort_by: Colonne de tri - "last_name", "first_name", "birthdate" (défaut: "last_name")
+    - order: Ordre - "asc" ou "desc" (défaut: "asc")
+    
+    Réponse:
+    - authors: Liste des auteurs avec id, nom, prénom, nationalité, dates, biographie
+    - pagination: Infos de pagination
+    - sort: Détails du tri
+    - filters: Filtres appliqués
+    
+    Statut: 200 OK
+    """
     sort_columns = {
         "last_name": Auteur.last_name,
         "first_name": Auteur.first_name,
@@ -74,6 +93,20 @@ def search_authors(
 
 @router.get("/")
 def get_authors(page: int = 1, db: Session = Depends(get_session)):
+    """
+    Récupérer la liste paginée de tous les auteurs.
+    
+    Paramètres:
+    - page: Numéro de page (défaut: 1)
+    
+    Réponse:
+    - authors: Liste des auteurs avec id, nom, prénom, dates de naissance/décès
+    - page: Numéro de page courant
+    - total: Nombre total d'auteurs
+    - pages: Nombre total de pages
+    
+    Statut: 200 OK
+    """
     per_page = 5
     offset = (page - 1) * per_page
     authors = db.query(Auteur).offset(offset).limit(per_page).all()
@@ -96,6 +129,19 @@ def get_authors(page: int = 1, db: Session = Depends(get_session)):
 
 @router.get("/{author_id}")
 def get_author_detail(author_id: int, db: Session = Depends(get_session)):
+    """
+    Récupérer les détails complets d'un auteur.
+    
+    Paramètres:
+    - author_id: ID de l'auteur
+    
+    Réponse:
+    - Détails complets (id, nom, prénom, nationalité, dates, biographie)
+    - livres: Liste de tous les livres de cet auteur (id, titre, ISBN, année, catégorie)
+    
+    Statut: 200 OK
+    Erreurs: 404 si auteur non trouvé
+    """
     author = db.query(Auteur).filter(Auteur.id == author_id).first()
 
     if not author:
@@ -126,6 +172,21 @@ def get_author_detail(author_id: int, db: Session = Depends(get_session)):
 
 @router.delete("/delete/{author_id}")
 def delete_author(author_id: int, db: Session = Depends(get_session)):
+    """
+    Supprimer un auteur de la base de données.
+    
+    Paramètres:
+    - author_id: ID de l'auteur à supprimer
+    
+    Validation:
+    - Impossible de supprimer si l'auteur a des livres associés
+    
+    Réponse:
+    - message: Confirmation de suppression
+    
+    Statut: 200 OK
+    Erreurs: 404 si auteur non trouvé, 400 si des livres associés existent
+    """
     from app.models import Book
 
     author = db.query(Auteur).filter(Auteur.id == author_id).first()
@@ -154,6 +215,27 @@ def ajouter_auteur(
     date_deces: str | None = None,
     db: Session = Depends(get_session),
 ):
+    """
+    Créer un nouvel auteur.
+    
+    Paramètres:
+    - last_name: Nom de famille (obligatoire)
+    - first_name: Prénom (obligatoire)
+    - nationalite: Nationalité (obligatoire)
+    - date_naissance: Date de naissance (format YYYY-MM-DD, obligatoire)
+    - biographie: Biographie (optionnel)
+    - date_deces: Date de décès (format YYYY-MM-DD, optionnel)
+    
+    Validation:
+    - Les dates doivent être au format YYYY-MM-DD
+    - Impossible de créer deux auteurs avec même nom et prénom
+    
+    Réponse:
+    - Objet auteur créé avec tous les détails et liste de livres vide
+    
+    Statut: 200 OK
+    Erreurs: 400 si format de date invalide ou auteur déjà existant
+    """
     new_auteur = Auteur(
         last_name=last_name,
         first_name=first_name,
@@ -197,6 +279,28 @@ def update_auteur(
     death_date: str | None = None,
     db: Session = Depends(get_session),
 ):
+    """
+    Mettre à jour les informations d'un auteur (mise à jour partielle).
+    
+    Paramètres:
+    - author_id: ID de l'auteur à modifier (obligatoire dans l'URL)
+    - last_name: Nouveau nom (optionnel, met à jour si fourni)
+    - first_name: Nouveau prénom (optionnel, met à jour si fourni)
+    - nationalite: Nouvelle nationalité (optionnel)
+    - birthdate: Nouvelle date de naissance (format YYYY-MM-DD, optionnel)
+    - biographie: Nouvelle biographie (optionnel)
+    - death_date: Nouvelle date de décès (format YYYY-MM-DD, optionnel)
+    
+    Validations:
+    - Seuls les champs fournis sont mis à jour
+    - L'auteur doit exister
+    
+    Réponse:
+    - Objet auteur modifié avec livres associés et nombre total de livres
+    
+    Statut: 200 OK
+    Erreurs: 404 si auteur introuvable
+    """
     author = db.query(Auteur).filter(Auteur.id == author_id).first()
     if not author:
         raise HTTPException(status_code=404, detail="Auteur non trouvé")

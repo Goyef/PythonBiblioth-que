@@ -18,6 +18,22 @@ def get_livres(
     order: str = "asc",
     db: Session = Depends(get_session),
 ):
+    """
+    Récupérer la liste paginée de tous les livres.
+    
+    Paramètres:
+    - page: Numéro de la page (défaut: 1)
+    - per_page: Nombre de livres par page (défaut: 5)
+    - sort_by: Colonne de tri - "title", "author", "year", "popularity" (défaut: "title")
+    - order: Ordre de tri - "asc" ou "desc" (défaut: "asc")
+    
+    Réponse:
+    - livres: Liste des livres avec id, titre, ISBN, auteur, année, copies disponibles
+    - pagination: Infos de pagination (page, per_page, total, pages_totales)
+    - sort: Détails du tri appliqué
+    
+    Statut: 200 OK
+    """
     sort_column = Book.title
     if sort_by == "author":
         sort_column = Author.last_name
@@ -62,6 +78,19 @@ def get_livres(
 
 @router.get("/{livre_id}", response_model=BookReadWithAuthor)
 def get_livre_detail(livre_id: int, db: Session = Depends(get_session)):
+    """
+    Récupérer les détails complets d'un livre.
+    
+    Paramètres:
+    - livre_id: ID du livre à récupérer
+    
+    Réponse:
+    - Tous les détails du livre (titre, ISBN, année, copies, catégorie, langue, pages, éditeur)
+    - Nom complet de l'auteur
+    
+    Statut: 200 OK
+    Erreurs: 404 si livre non trouvé
+    """
     livre = db.query(Book).filter(Book.id == livre_id).first()
 
     if not livre:
@@ -100,6 +129,29 @@ def search_livres(
     available_only: bool = False,
     db: Session = Depends(get_session),
 ):
+    """
+    Recherche avancée de livres avec filtres multiples.
+    
+    Paramètres:
+    - page: Numéro de page (défaut: 1)
+    - per_page: Livres par page (défaut: 5)
+    - title: Recherche par titre (correspondance partielle, insensible à la casse)
+    - author: Recherche par nom/prénom d'auteur
+    - isbn: Recherche par ISBN exact
+    - category: Filtrer par catégorie
+    - year: Année de publication exacte
+    - year_min: Année minimale
+    - year_max: Année maximale
+    - language: Filtrer par langue
+    - available_only: Afficher seulement les livres disponibles (défaut: False)
+    
+    Réponse:
+    - livres: Résultats filtrés et paginés
+    - pagination: Infos de pagination
+    - filters: Filtres appliqués
+    
+    Statut: 200 OK
+    """
     query = db.query(Book)
 
     if title:
@@ -178,6 +230,18 @@ def search_livres(
 
 @router.delete("/{livre_id}")
 def delete_livre(livre_id: int, db: Session = Depends(get_session)):
+    """
+    Supprimer un livre de la base de données.
+    
+    Paramètres:
+    - livre_id: ID du livre à supprimer
+    
+    Réponse:
+    - message: Confirmation de suppression
+    
+    Statut: 200 OK
+    Erreurs: 404 si livre non trouvé
+    """
     livre = db.query(Book).filter(Book.id == livre_id).first()
     if not livre:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
@@ -188,6 +252,28 @@ def delete_livre(livre_id: int, db: Session = Depends(get_session)):
 
 @router.post("/add")
 def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
+    """
+    Créer un nouveau livre dans le catalogue.
+    
+    Paramètres (JSON):
+    - title: Titre du livre (obligatoire)
+    - isbn: ISBN unique (obligatoire)
+    - publication_year: Année de publication (obligatoire)
+    - author_id: ID de l'auteur (obligatoire, doit exister)
+    - available_copies: Copies disponibles (obligatoire, >= 0)
+    - total_copies: Copies totales (obligatoire)
+    - category: Catégorie (FICTION, SCIENCE, HISTOIRE, PHILOSOPHIE, AUTRE)
+    - language: Code langue ISO (ex: en, fr)
+    - pages: Nombre de pages
+    - publisher: Editeur
+    - description: Description du livre
+    
+    Réponse:
+    - Objet livre créé avec tous les détails
+    
+    Statut: 200 OK
+    Erreurs: 400 si ISBN déjà existant, 404 si auteur non trouvé
+    """
     isbn_exist = db.query(Book).filter(Book.isbn == book.isbn).first()
     if isbn_exist:
         raise HTTPException(status_code=400, detail="ISBN déjà existant")
@@ -241,6 +327,25 @@ def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
 def update_livre(
     livre_id: int, book_update: BookUpdate, db: Session = Depends(get_session)
 ):
+    """
+    Mettre à jour les informations d'un livre.
+    
+    Paramètres:
+    - livre_id: ID du livre à modifier
+    - JSON avec champs optionnels à modifier (title, isbn, publication_year, author_id, 
+      available_copies, category, language, pages, publisher, description)
+    
+    Comportement:
+    - Seuls les champs fournis sont modifiés
+    - Valide l'unicité de l'ISBN si modifié
+    - L'auteur doit exister s'il est modifié
+    
+    Réponse:
+    - Objet livre mis à jour
+    
+    Statut: 200 OK
+    Erreurs: 404 si livre/auteur non trouvé, 400 si ISBN déjà existant
+    """
     livre = db.query(Book).filter(Book.id == livre_id).first()
 
     if not livre:

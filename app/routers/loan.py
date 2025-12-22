@@ -22,13 +22,25 @@ def get_loans(
     db: Session = Depends(get_session),
 ):
     """
-    Consultation des emprunts avec filtres
-    - statut: ACTIF, RETOURNE, EN_RETARD (optionnel)
-    - email_emprunteur: filtrer par email (optionnel)
-    - numero_carte: filtrer par numéro de carte (optionnel)
-    - book_id: filtrer par livre (optionnel)
-    - date_debut: date minimum (YYYY-MM-DD) (optionnel)
-    - date_fin: date maximum (YYYY-MM-DD) (optionnel)
+    Récupérer la liste paginée des emprunts avec filtres optionnels.
+    
+    Paramètres:
+    - page: Numéro de page (défaut: 1)
+    - per_page: Emprunts par page (défaut: 5)
+    - statut: Filtrer par statut - "ACTIF", "RETOURNE", "EN_RETARD" (optionnel)
+    - email_emprunteur: Filtrer par email de l'emprunteur - correspondance partielle (optionnel)
+    - numero_carte: Filtrer par numéro de carte exact (optionnel)
+    - book_id: Filtrer par ID du livre (optionnel)
+    - date_debut: Date de début minimum (format YYYY-MM-DD, optionnel)
+    - date_fin: Date de fin maximum (format YYYY-MM-DD, optionnel)
+    
+    Réponse:
+    - emprunts: Liste des emprunts avec id, emprunteur, email, carte, livre_id, dates et statut
+    - pagination: Infos de pagination (page, par_page, total, pages_totales)
+    - filtres: Filtres appliqués pour traçabilité
+    
+    Statut: 200 OK
+    Erreurs: 400 si format de date invalide ou statut invalide
     """
     query = db.query(Loan)
 
@@ -109,8 +121,21 @@ def get_loans(
 
 @router.get("/{loan_id}")
 def get_loan_detail(loan_id: int, db: Session = Depends(get_session)):
+    """
+    Récupérer les détails complets d'un emprunt.
+    
+    Paramètres:
+    - loan_id: ID de l'emprunt
+    
+    Réponse:
+    - Détails complets de l'emprunt (id, emprunteur, email, carte, titre du livre)
+    - Dates (emprunt, limite de retour, retour effectif)
+    - Statut actuel de l'emprunt
+    
+    Statut: 200 OK
+    Erreurs: 404 si emprunt non trouvé
+    """
     loan = db.query(Loan).filter(Loan.id == loan_id).first()
-
     if not loan:
         raise HTTPException(status_code=404, detail="Emprunt non trouvé")
 
@@ -129,7 +154,26 @@ def get_loan_detail(loan_id: int, db: Session = Depends(get_session)):
 
 @router.post("/renew/{loan_id}")
 def renew_loan(loan_id: int, db: Session = Depends(get_session)):
- 
+    """
+    Renouveler un emprunt actif (ajoute 14 jours à la date limite).
+    
+    Paramètres:
+    - loan_id: ID de l'emprunt à renouveler
+    
+    Validations:
+    - L'emprunt doit exister et être au statut ACTIF
+    - Chaque emprunt ne peut être renouvelé qu'une seule fois maximum
+    - Le champ 'renewed' est incrémenté de 1 lors du renouvellement
+    
+    Réponse:
+    - Détails de l'emprunt après renouvellement
+    - Anciennes et nouvelles dates limites
+    - Nombre de jours ajoutés (14)
+    - Nombre de renouvellements utilisés et restants
+    
+    Statut: 200 OK
+    Erreurs: 404 si emprunt non trouvé, 400 si statut invalide ou déjà renouvelé
+    """
     loan = db.query(Loan).filter(Loan.id == loan_id).first()
     if not loan:
         raise HTTPException(status_code=404, detail="Emprunt non trouvé")
@@ -172,6 +216,19 @@ def renew_loan(loan_id: int, db: Session = Depends(get_session)):
 
 @router.delete("/delete/{loan_id}")
 def delete_loan(loan_id: int, db: Session = Depends(get_session)):
+    """
+    Supprimer un emprunt de la base de données.
+    
+    Paramètres:
+    - loan_id: ID de l'emprunt à supprimer
+    
+    Réponse:
+    - message: Confirmation de la suppression
+    
+    Statut: 200 OK
+    Erreurs: 404 si emprunt non trouvé
+    """
+
     loan = db.query(Loan).filter(Loan.id == loan_id).first()
     if not loan:
         raise HTTPException(status_code=404, detail="Emprunt non trouvé")
@@ -182,7 +239,31 @@ def delete_loan(loan_id: int, db: Session = Depends(get_session)):
 
 @router.post("/return/{loan_id}")
 def return_book(loan_id: int, db: Session = Depends(get_session)):
-
+    """
+    Enregistrer le retour d'un livre emprunté.
+    
+    Paramètres:
+    - loan_id: ID de l'emprunt dont le livre est retourné
+    
+    Processus:
+    1. Validation: L'emprunt doit être au statut ACTIF et le livre doit exister
+    2. Date de retour: Définie à la date du jour
+    3. Calcul de pénalité: 1€ par jour de retard si la date limite est dépassée
+    4. Mise à jour du statut:
+       - "RETOURNE" si retour dans les délais
+       - "EN_RETARD" si retour après la date limite
+    5. Incrémentation: Les copies disponibles du livre augmentent de 1
+    6. Durée de l'emprunt: Calculée en jours
+    
+    Réponse:
+    - Détails de l'emprunt après retour
+    - Indicateur is_late (retard?)
+    - Montant de la pénalité
+    - Durée totale de l'emprunt en jours
+    
+    Statut: 200 OK
+    Erreurs: 404 si emprunt/livre non trouvé, 400 si statut invalide
+    """
     loan = db.query(Loan).filter(Loan.id == loan_id).first()
     if not loan:
         raise HTTPException(status_code=404, detail="Emprunt non trouvé")
@@ -236,6 +317,34 @@ def return_book(loan_id: int, db: Session = Depends(get_session)):
 
 @router.post("/add")
 def ajouter_loan(loan: LoanCreate, db: Session = Depends(get_session)):
+    """
+    Créer un nouvel emprunt de livre.
+    
+    Paramètres (dans le corps JSON via LoanCreate):
+    - nom_emprunteur: Nom complet de l'emprunteur (obligatoire)
+    - email_emprunteur: Email de l'emprunteur (obligatoire)
+    - numero_carte: Numéro de carte de l'emprunteur (obligatoire)
+    - book_id: ID du livre à emprunter (obligatoire)
+    - date_emprunt: Date de l'emprunt (format YYYY-MM-DD, obligatoire)
+    - statut: Statut initial (optionnel, défaut: ACTIF)
+    
+    Validations et Processus:
+    1. Existence du livre et disponibilité (available_copies > 0)
+    2. Limite d'emprunts actifs: Maximum 5 emprunts ACTIF par email
+    3. Date de retour: Calculée automatiquement (date_emprunt + 14 jours)
+    4. Décrémentation: Les copies disponibles du livre diminuent de 1
+    5. Historique: Création/mise à jour de l'enregistrement LoanHistory pour popularité
+    
+    Réponse:
+    - ID de l'emprunt créé
+    - Détails emprunteur et livre
+    - Dates (emprunt, limite de retour, retour = None)
+    - Statut initial
+    
+    Statut: 200 OK
+    Erreurs: 404 si livre non trouvé, 400 si non disponible ou limite atteinte
+    """
+
     book = db.query(Book).filter(Book.id == loan.book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
