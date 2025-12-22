@@ -2,14 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models import  Author, Book, CategorieEnum
 from app.database import get_session
-from app.schemas.book import BookCreate
+from app.schemas.book import BookCreate, BookRead, BookReadWithAuthor, BookUpdate
+from app.schemas.common import PaginatedResponse
+from typing import Optional
 router = APIRouter(
     prefix="/books",
     tags=["Livres"]
 )
 
 
-@router.get("/")
+@router.get("/" )
 def get_livres(page: int = 1, db: Session = Depends(get_session)):
     per_page = 5
     offset = (page - 1) * per_page
@@ -23,23 +25,28 @@ def get_livres(page: int = 1, db: Session = Depends(get_session)):
         "pages": pages
     }
 
-@router.get("/{livre_id}")
+@router.get("/{livre_id}", response_model=BookReadWithAuthor)
 def get_livre_detail(livre_id: int, db: Session = Depends(get_session)):
     livre = db.query(Book).filter(Book.id == livre_id).first()
-
+    
+    if not livre:
+        raise HTTPException(status_code=404, detail="Livre non trouvé")
+    
     return {
         "id": livre.id,
-        "titre": livre.title,
+        "title": livre.title,
         "isbn": livre.isbn,
-        "annee_publi": livre.publication_year,
-        "auteur ": livre.authors.first_name + " " + livre.authors.last_name,
-        "nb_exemplaires_dispo": livre.available_copies,
-        "nb_exemplaires_total": livre.total_copies,
+        "publication_year": livre.publication_year,
+        "author_id": livre.author_id,
+        "available_copies": livre.available_copies,
+        "total_copies": livre.total_copies,
         "description": livre.description,
-        "categorie": livre.category,
+        "category": livre.category,
         "language": livre.language,
-        "nb_pages": livre.pages,
-        "maison_edition": livre.publisher
+        "pages": livre.pages,
+        "publisher": livre.publisher,
+        "author_name": livre.authors.first_name + " " + livre.authors.last_name,
+        "loans_count": 0
     }
 @router.delete("/{livre_id}")
 def delete_livre(livre_id: int, db: Session = Depends(get_session)):
@@ -83,32 +90,32 @@ def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
     return {"message": "Livre ajouté avec succès", "livre_id": new_livre.id}
 
 @router.put("/update/{livre_id}")
-def update_livre(livre_id: int, titre: str | None = None, isbn: str | None = None, annee_publi: int | None = None, auteur: str | None = None, nb_exemplaires_dispo: int | None = None, Descritpion: str | None = None, categorie: str | None = None, language: str | None = None, nb_pages: int | None = None, maison_edition: str | None = None, db: Session = Depends(get_session)):
+def update_livre(livre_id: int, book_update: BookUpdate, db: Session = Depends(get_session)):
     livre = db.query(Book).filter(Book.id == livre_id).first()
     
     if not livre:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
     
-    if titre is not None:
-        livre.title = titre
-    if isbn is not None:
-        livre.isbn = isbn
-    if annee_publi is not None:
-        livre.publication_year = annee_publi
-    if auteur is not None:
-        livre.authors = auteur
-    if nb_exemplaires_dispo is not None:
-        livre.available_copies = nb_exemplaires_dispo
-    if Descritpion is not None:
-        livre.description = Descritpion
-    if categorie is not None:
-        livre.category = categorie
-    if language is not None:
-        livre.language = language
-    if nb_pages is not None:
-        livre.pages = nb_pages
-    if maison_edition is not None:
-        livre.publisher = maison_edition
+    if book_update.title is not None:
+        livre.title = book_update.title
+    if book_update.isbn is not None:
+        livre.isbn = book_update.isbn
+    if book_update.publication_year is not None:
+        livre.publication_year = book_update.publication_year
+    if book_update.author_id is not None:
+        livre.author_id = book_update.author_id
+    if book_update.available_copies is not None:
+        livre.available_copies = book_update.available_copies
+    if book_update.description is not None:
+        livre.description = book_update.description
+    if book_update.category is not None:
+        livre.category = book_update.category
+    if book_update.language is not None:
+        livre.language = book_update.language
+    if book_update.pages is not None:
+        livre.pages = book_update.pages
+    if book_update.publisher is not None:
+        livre.publisher = book_update.publisher
 
     db.commit()
     return {"message": f"Livre {livre_id} mis à jour avec succès"}
