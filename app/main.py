@@ -3,13 +3,14 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
-from app.database import create_db_and_tables 
+from app.database import create_db_and_tables
 from app.error_handlers import (
     generic_exception_handler,
     library_exception_handler,
     validation_exception_handler,
 )
 from app.exceptions import LibraryException
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,15 +20,18 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     pass
+
+
 from app.routers.book import router as livres_router
 from app.routers.author import router as auteurs_router
 from app.routers.loan import router as loans_router
+from app.routers.stats import router as stats_router
 
 app = FastAPI(
     title="Bibliothèque API",
     description="API pour gérer une bibliothèque de livres.",
     version="1.0.0",
-     docs_url="/docs",
+    docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
 )
@@ -49,6 +53,8 @@ app.add_exception_handler(Exception, generic_exception_handler)
 app.include_router(livres_router)
 app.include_router(auteurs_router)
 app.include_router(loans_router)
+app.include_router(stats_router)
+
 
 class Item(BaseModel):
     name: str
@@ -56,8 +62,7 @@ class Item(BaseModel):
     price: float
     tax: float | None = None
 
+
 @app.get("/", tags=["Root"])
 def read_root():
     return {"message": "Bienvenue à l'API de la Bibliothèque"}
-
-

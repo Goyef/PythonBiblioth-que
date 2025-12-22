@@ -29,7 +29,7 @@ class BookBase(BaseModel):
     @classmethod
     def validate_isbn_field(cls, v: str) -> str:
         """Valide l'ISBN"""
-        #à regarder plus tard
+        # à regarder plus tard
         return validate_isbn13(v)
 
     @field_validator("publication_year")
@@ -71,14 +71,13 @@ class BookBase(BaseModel):
 
 class BookCreate(BookBase):
     """Schema pour créer un livre"""
-    
+
     class Config:
         from_attributes = True
 
 
 class BookUpdate(BaseModel):
     """Schema pour mettre à jour un livre (tous les champs optionnels)"""
-
 
     title: Optional[str] = None
     isbn: Optional[str] = None
@@ -136,6 +135,3 @@ class BookReadWithAuthor(BookRead):
 
     class Config:
         from_attributes = True
-
-
-

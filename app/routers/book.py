@@ -1,19 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc
-from app.models import  Author, Book, CategorieEnum
+from app.models import Author, Book, CategorieEnum
 from app.database import get_session
 from app.schemas.book import BookCreate, BookRead, BookReadWithAuthor, BookUpdate
 from app.schemas.common import PaginatedResponse
 from typing import Optional
-router = APIRouter(
-    prefix="/books",
-    tags=["Livres"]
-)
+
+router = APIRouter(prefix="/books", tags=["Livres"])
 
 
-@router.get("/" )
-def get_livres(page: int = 1, per_page: int = 5, sort_by: str = "title", order: str = "asc", db: Session = Depends(get_session)):
+@router.get("/")
+def get_livres(
+    page: int = 1,
+    per_page: int = 5,
+    sort_by: str = "title",
+    order: str = "asc",
+    db: Session = Depends(get_session),
+):
     sort_column = Book.title
     if sort_by == "author":
         sort_column = Author.last_name
@@ -21,21 +25,17 @@ def get_livres(page: int = 1, per_page: int = 5, sort_by: str = "title", order: 
         sort_column = Book.publication_year
     elif sort_by == "popularity":
         sort_column = Book.available_copies
-    
+
     sort_direction = desc if order == "desc" else asc
-    
-    if sort_by == "author":
-        total = db.query(Book).join(Author).count()
-        query = db.query(Book).join(Author).order_by(sort_direction(sort_column))
-    else:
-        total = db.query(Book).count()
-        query = db.query(Book).order_by(sort_direction(sort_column))
-    
+
+    total = db.query(Book).count()
+    query = db.query(Book).order_by(sort_direction(sort_column))
+
     pages = (total + per_page - 1) // per_page
-    
+
     offset = (page - 1) * per_page
     livres = query.offset(offset).limit(per_page).all()
-    
+
     return {
         "livres": [
             {
@@ -46,28 +46,27 @@ def get_livres(page: int = 1, per_page: int = 5, sort_by: str = "title", order: 
                 "auteur": l.authors.first_name + " " + l.authors.last_name,
                 "annee_publi": l.publication_year,
                 "available_copies": l.available_copies,
-                "total_copies": l.total_copies
-            } for l in livres
+                "total_copies": l.total_copies,
+            }
+            for l in livres
         ],
         "pagination": {
             "page n°": page,
             "book_per_page": per_page,
             "number of books": total,
-            "number of pages": pages
+            "number of pages": pages,
         },
-        "sort": {
-            "sort_by": sort_by,
-            "order": order
-        }
+        "sort": {"sort_by": sort_by, "order": order},
     }
+
 
 @router.get("/{livre_id}", response_model=BookReadWithAuthor)
 def get_livre_detail(livre_id: int, db: Session = Depends(get_session)):
     livre = db.query(Book).filter(Book.id == livre_id).first()
-    
+
     if not livre:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
-    
+
     return {
         "id": livre.id,
         "title": livre.title,
@@ -82,8 +81,10 @@ def get_livre_detail(livre_id: int, db: Session = Depends(get_session)):
         "pages": livre.pages,
         "publisher": livre.publisher,
         "author_name": livre.authors.first_name + " " + livre.authors.last_name,
-        "loans_count": 0
+        "loans_count": 0,
     }
+
+
 @router.get("/search")
 def search_livres(
     page: int = 1,
@@ -97,44 +98,44 @@ def search_livres(
     year_max: int = None,
     language: str = None,
     available_only: bool = False,
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
 ):
     query = db.query(Book)
-    
+
     if title:
         query = query.filter(Book.title.ilike(f"%{title}%"))
-    
+
     if author:
         query = query.join(Author).filter(
-            (Author.first_name.ilike(f"%{author}%")) | 
-            (Author.last_name.ilike(f"%{author}%"))
+            (Author.first_name.ilike(f"%{author}%"))
+            | (Author.last_name.ilike(f"%{author}%"))
         )
-    
+
     if isbn:
         query = query.filter(Book.isbn == isbn)
-    
+
     if category:
         query = query.filter(Book.category.ilike(f"%{category}%"))
-    
+
     if year:
         query = query.filter(Book.publication_year == year)
     if year_min:
         query = query.filter(Book.publication_year >= year_min)
     if year_max:
         query = query.filter(Book.publication_year <= year_max)
-    
+
     if language:
         query = query.filter(Book.language.ilike(f"%{language}%"))
-    
+
     if available_only:
         query = query.filter(Book.available_copies > 0)
-    
+
     total = query.count()
     pages = (total + per_page - 1) // per_page
-    
+
     offset = (page - 1) * per_page
     livres = query.offset(offset).limit(per_page).all()
-    
+
     return {
         "livres": [
             {
@@ -142,19 +143,24 @@ def search_livres(
                 "titre": l.title,
                 "isbn": l.isbn,
                 "auteur id": l.author_id,
-                "auteur": l.authors.first_name + " " + l.authors.last_name if l.authors else "Inconnu",
+                "auteur": (
+                    l.authors.first_name + " " + l.authors.last_name
+                    if l.authors
+                    else "Inconnu"
+                ),
                 "annee_publi": l.publication_year,
                 "categorie": l.category,
                 "langue": l.language,
                 "available_copies": l.available_copies,
-                "total_copies": l.total_copies
-            } for l in livres
+                "total_copies": l.total_copies,
+            }
+            for l in livres
         ],
         "pagination": {
             "page n°": page,
             "book_per_page": per_page,
             "number of books": total,
-            "number of pages": pages
+            "number of pages": pages,
         },
         "filters": {
             "title": title,
@@ -165,8 +171,8 @@ def search_livres(
             "year_min": year_min,
             "year_max": year_max,
             "language": language,
-            "available_only": available_only
-        }
+            "available_only": available_only,
+        },
     }
 
 
@@ -179,12 +185,13 @@ def delete_livre(livre_id: int, db: Session = Depends(get_session)):
     db.commit()
     return {"message": f"Livre {livre_id} supprimé"}
 
+
 @router.post("/add")
 def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
     isbn_exist = db.query(Book).filter(Book.isbn == book.isbn).first()
     if isbn_exist:
         raise HTTPException(status_code=400, detail="ISBN déjà existant")
-    
+
     new_livre = Book(
         title=book.title,
         isbn=book.isbn,
@@ -196,7 +203,7 @@ def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
         category=book.category,
         language=book.language,
         pages=book.pages,
-        publisher=book.publisher
+        publisher=book.publisher,
     )
 
     author = db.get(Author, book.author_id)
@@ -226,16 +233,19 @@ def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
         "language": new_livre.language,
         "pages": new_livre.pages,
         "publisher": new_livre.publisher,
-        "author_name": new_livre.authors.first_name + " " + new_livre.authors.last_name
+        "author_name": new_livre.authors.first_name + " " + new_livre.authors.last_name,
     }
 
+
 @router.put("/update/{livre_id}")
-def update_livre(livre_id: int, book_update: BookUpdate, db: Session = Depends(get_session)):
+def update_livre(
+    livre_id: int, book_update: BookUpdate, db: Session = Depends(get_session)
+):
     livre = db.query(Book).filter(Book.id == livre_id).first()
-    
+
     if not livre:
         raise HTTPException(status_code=404, detail="Livre non trouvé")
-    
+
     if book_update.title is not None:
         livre.title = book_update.title
     if book_update.isbn is not None:
@@ -256,7 +266,7 @@ def update_livre(livre_id: int, book_update: BookUpdate, db: Session = Depends(g
         livre.pages = book_update.pages
     if book_update.publisher is not None:
         livre.publisher = book_update.publisher
-        
+
     if book_update.isbn is not None and book_update.isbn != livre.isbn:
         isbn_exist = db.query(Book).filter(Book.isbn == book_update.isbn).first()
         if isbn_exist:
@@ -276,5 +286,5 @@ def update_livre(livre_id: int, book_update: BookUpdate, db: Session = Depends(g
         "language": livre.language,
         "pages": livre.pages,
         "publisher": livre.publisher,
-        "author_name": livre.authors.first_name + " " + livre.authors.last_name
+        "author_name": livre.authors.first_name + " " + livre.authors.last_name,
     }

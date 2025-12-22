@@ -4,8 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Configuration de l'application"""
 
-    Adresse:str = "http://localhost:8000"
-
+    Adresse: str = "http://localhost:8000"
 
     # Base de données
     DATABASE_URL: str = "sqlite:///./bibliotheque.db"
