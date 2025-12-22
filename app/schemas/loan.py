@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import BaseModel, field_validator, model_validator
 from datetime import date
 from app.models import CategorieEnum
+from app.schemas.book import BookRead
 
 class LoanBase(BaseModel):
     """Schema de base pour un emprunt"""
@@ -89,5 +90,12 @@ class LoanRead(LoanBase):
     """Schema pour lire un emprunt"""
     id: int
 
+    class Config:
+        from_attributes = True
+
+class LoanReadWithBook(LoanRead):
+    """Schema pour lire un emprunt avec les détails du livre associé"""
+    book: "BookRead"
+    
     class Config:
         from_attributes = True

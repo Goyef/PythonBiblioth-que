@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models import Loan
-from app.schemas.loan import LoanRead
+from app.schemas.loan import LoanReadWithBook
 from app.database import get_session
 
 router = APIRouter(
@@ -21,7 +21,7 @@ def get_loans(page: int = 1, db: Session = Depends(get_session)):
         "pages": (db.query(Loan).count() + per_page - 1)
     }
 
-@router.get("/{loan_id}", response_model=LoanRead)
+@router.get("/{loan_id}", response_model=LoanReadWithBook)
 def get_loan_detail(loan_id: int, db: Session = Depends(get_session)):
     loan = db.query(Loan).filter(Loan.id == loan_id).first()
 
@@ -32,7 +32,7 @@ def get_loan_detail(loan_id: int, db: Session = Depends(get_session)):
         "id": loan.id,
         "nom_emprunteur": loan.nom_emprunteur,
         "email_emprunteur": loan.email_emprunteur,
-        "book_id": loan.book_id,
+        "book_name": loan.books.title,
         "date_emprunt": loan.date_emprunt,
         "date_limite_retour": loan.date_limite_retour,
         "date_retour": loan.date_retour,
