@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models import Author as Auteur
 from app.database import get_session
+from app.schemas.author import AuthorRead
 
 router = APIRouter(
     prefix="/authors",
@@ -13,15 +14,28 @@ def get_authors(page: int = 1, db: Session = Depends(get_session)):
     per_page = 5
     offset = (page - 1) * per_page
     authors = db.query(Auteur).offset(offset).limit(per_page).all()
-    # nom = db.query(Auteur).offset(offset).limit(per_page).all()
-    # prenom = db.query(Auteur).offset(offset).limit(per_page).all()
-    # date_naissance = db.query(Auteur).offset(offset).limit(per_page).all()
-    # date_deces = db.query(Auteur).offset(offset).limit(per_page).all()
     return {
         "authors": [{"id": a.id, "nom": a.last_name, "prenom": a.first_name, "date_naissance": a.birthdate, "date_deces": a.death_date} for a in authors],
         "page": page,
         "total": db.query(Auteur).count(),
         "pages": (db.query(Auteur).count() + per_page - 1)
+    }
+
+@router.get("/{author_id}", response_model=AuthorRead)
+def get_author_detail(author_id: int, db: Session = Depends(get_session)):
+    author = db.query(Auteur).filter(Auteur.id == author_id).first()
+
+    if not author:
+        raise HTTPException(status_code=404, detail="Auteur non trouvé")
+
+    return {
+        "id": author.id,
+        "last_name": author.last_name,
+        "first_name": author.first_name,
+        "nationalite": author.nationalite,
+        "birthdate": author.birthdate,
+        "death_date": author.death_date,
+        "biographie": author.biographie
     }
 
 @router.delete("/delete/{author_id}")
