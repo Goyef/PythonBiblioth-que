@@ -18,6 +18,7 @@ class StatutEmpruntEnum(str, enum.Enum):
     ACTIF = "Actif"
     RETOURNE = "Retourné"
     EN_RETARD = "En retard"
+
     
 class Book(Base):
     __tablename__ = 'books'
@@ -68,11 +69,15 @@ class Loan(Base):
     
     nom_emprunteur = Column(String(100))
     email_emprunteur = Column(String(100))
+    numero_carte = Column(String(50))
     date_emprunt = Column(String)
     date_limite_retour = Column(String)
     date_retour = Column(String)
-    statut = Column(String(20))
-
+    statut = Column(
+        Enum(StatutEmpruntEnum, name="statut_emprunt_enum"),  
+        nullable=False,
+        default=StatutEmpruntEnum.ACTIF
+    )
     book_id = Column(Integer, ForeignKey("books.id", ondelete="RESTRICT"), nullable=False, index=True)
     books = relationship("Book", back_populates="loans")
     

@@ -12,8 +12,6 @@ router = APIRouter(
 )
 
 
-
-
 @router.get("/" )
 def get_livres(page: int = 1, per_page: int = 5, sort_by: str = "title", order: str = "asc", db: Session = Depends(get_session)):
     sort_column = Book.title

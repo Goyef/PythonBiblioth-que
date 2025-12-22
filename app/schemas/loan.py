@@ -10,6 +10,7 @@ class LoanBase(BaseModel):
 
     nom_emprunteur: str
     email_emprunteur: str
+    numero_carte: str
     date_emprunt: str
     date_limite_retour: str
     date_retour: Optional[str] = None
@@ -57,33 +58,72 @@ class LoanCreate(LoanBase):
     class Config:
         from_attributes = True
 
-class LoanUpdate(LoanBase):
-    """Schema pour la mise à jour d'un emprunt"""
-    
-    nom_emprunteur: str
-    email_emprunteur: str
-    date_emprunt: str
-    date_limite_retour: str
-    date_retour: Optional[str] = None
-    statut: str
-    book_id: int
+class LoanUpdate(BaseModel):
+    """Schema pour mettre à jour un emprunt (tous les champs optionnels)"""
 
+    nom_emprunteur: Optional[str] = None
+    email_emprunteur: Optional[str] = None
+    date_emprunteur: Optional[str] = None
+    date_emprunt: Optional[str] = None
+    date_limite_retour: Optional[str] = None
+    date_retour: Optional[str] = None
+    statut: Optional[str] = None
+    book_id: Optional[int] = None
+
+    @field_validator("nom_emprunteur")
+    @classmethod
+    def validate_nom_emprunteur_field(cls, v: Optional[str]) -> Optional[str]:
+        """Valide le nom de l'emprunteur"""
+        if v is not None:
+            return v
+        return v
+    
+    @field_validator("email_emprunteur")
+    @classmethod
+    def validate_email_emprunteur_field(cls, v: Optional[str]) -> Optional[str]:
+        """Valide l'email de l'emprunteur"""
+        if v is not None:
+            return v
+        return v
+    
     @field_validator("date_emprunt")
     @classmethod
-    def validate_date_emprunt_field(cls, v: date) -> date:
+    def validate_date_emprunt_field(cls, v: Optional[str]) -> Optional[str]:
         """Valide la date d'emprunt"""
+        if v is not None:
+            return v
         return v
     
     @field_validator("date_limite_retour")
     @classmethod
-    def validate_date_limite_retour_field(cls, v: date) -> date:
+    def validate_date_limite_retour_field(cls, v: Optional[str]) -> Optional[str]:
         """Valide la date limite de retour"""
+        if v is not None:
+            return v
         return v
     
     @field_validator("date_retour")
     @classmethod
-    def validate_date_retour_field(cls, v: Optional[date]) -> Optional[date]:
+    def validate_date_retour_field(cls, v: Optional[str]) -> Optional[str]:
         """Valide la date de retour"""
+        if v is not None:
+            return v
+        return v
+
+    @field_validator("statut")
+    @classmethod
+    def validate_statut_field(cls, v: Optional[str]) -> Optional[str]:
+        """Valide le statut de l'emprunt"""
+        if v is not None:
+            return v
+        return v
+    
+    @field_validator("book_id")
+    @classmethod
+    def validate_book_id_field(cls, v: Optional[int]) -> Optional[int]:
+        """Valide l'ID du livre"""
+        if v is not None and v > 0:
+            return v
         return v
 
 class LoanRead(LoanBase):

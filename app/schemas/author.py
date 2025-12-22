@@ -12,7 +12,7 @@ class AuthorBase(BaseModel):
 
     first_name: str
     last_name: str
-    birth_date: Optional[str] = None
+    birth_date: str = None
     death_date: Optional[str] = None
     biography: Optional[str] = None
     nationalite: Optional[str] = None
