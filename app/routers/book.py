@@ -12,6 +12,8 @@ router = APIRouter(
 )
 
 
+
+
 @router.get("/" )
 def get_livres(page: int = 1, per_page: int = 5, sort_by: str = "title", order: str = "asc", db: Session = Depends(get_session)):
     sort_column = Book.title
@@ -84,6 +86,92 @@ def get_livre_detail(livre_id: int, db: Session = Depends(get_session)):
         "author_name": livre.authors.first_name + " " + livre.authors.last_name,
         "loans_count": 0
     }
+@router.get("/search")
+def search_livres(
+    page: int = 1,
+    per_page: int = 5,
+    title: str = None,
+    author: str = None,
+    isbn: str = None,
+    category: str = None,
+    year: int = None,
+    year_min: int = None,
+    year_max: int = None,
+    language: str = None,
+    available_only: bool = False,
+    db: Session = Depends(get_session)
+):
+    query = db.query(Book)
+    
+    if title:
+        query = query.filter(Book.title.ilike(f"%{title}%"))
+    
+    if author:
+        query = query.join(Author).filter(
+            (Author.first_name.ilike(f"%{author}%")) | 
+            (Author.last_name.ilike(f"%{author}%"))
+        )
+    
+    if isbn:
+        query = query.filter(Book.isbn == isbn)
+    
+    if category:
+        query = query.filter(Book.category.ilike(f"%{category}%"))
+    
+    if year:
+        query = query.filter(Book.publication_year == year)
+    if year_min:
+        query = query.filter(Book.publication_year >= year_min)
+    if year_max:
+        query = query.filter(Book.publication_year <= year_max)
+    
+    if language:
+        query = query.filter(Book.language.ilike(f"%{language}%"))
+    
+    if available_only:
+        query = query.filter(Book.available_copies > 0)
+    
+    total = query.count()
+    pages = (total + per_page - 1) // per_page
+    
+    offset = (page - 1) * per_page
+    livres = query.offset(offset).limit(per_page).all()
+    
+    return {
+        "livres": [
+            {
+                "id": l.id,
+                "titre": l.title,
+                "isbn": l.isbn,
+                "auteur id": l.author_id,
+                "auteur": l.authors.first_name + " " + l.authors.last_name if l.authors else "Inconnu",
+                "annee_publi": l.publication_year,
+                "categorie": l.category,
+                "langue": l.language,
+                "available_copies": l.available_copies,
+                "total_copies": l.total_copies
+            } for l in livres
+        ],
+        "pagination": {
+            "page n°": page,
+            "book_per_page": per_page,
+            "number of books": total,
+            "number of pages": pages
+        },
+        "filters": {
+            "title": title,
+            "author": author,
+            "isbn": isbn,
+            "category": category,
+            "year": year,
+            "year_min": year_min,
+            "year_max": year_max,
+            "language": language,
+            "available_only": available_only
+        }
+    }
+
+
 @router.delete("/{livre_id}")
 def delete_livre(livre_id: int, db: Session = Depends(get_session)):
     livre = db.query(Book).filter(Book.id == livre_id).first()
@@ -127,7 +215,21 @@ def ajouter_livre(book: BookCreate, db: Session = Depends(get_session)):
     db.add(new_livre)
     db.commit()
     db.refresh(new_livre)
-    return {"message": "Livre ajouté avec succès", "livre_id": new_livre.id}
+    return {
+        "id": new_livre.id,
+        "title": new_livre.title,
+        "isbn": new_livre.isbn,
+        "publication_year": new_livre.publication_year,
+        "author_id": new_livre.author_id,
+        "available_copies": new_livre.available_copies,
+        "total_copies": new_livre.total_copies,
+        "description": new_livre.description,
+        "category": new_livre.category,
+        "language": new_livre.language,
+        "pages": new_livre.pages,
+        "publisher": new_livre.publisher,
+        "author_name": new_livre.authors.first_name + " " + new_livre.authors.last_name
+    }
 
 @router.put("/update/{livre_id}")
 def update_livre(livre_id: int, book_update: BookUpdate, db: Session = Depends(get_session)):
